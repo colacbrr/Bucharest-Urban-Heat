@@ -1,0 +1,26 @@
+# Publicăm numai fișierele aprobate pentru evaluare.
+*
+!/.gitignore
+!/.gitattributes
+!/materiale/
+!/prezentare/
+!/date/
+!/requirements.txt
+!/ruleaza.py
+!/analiza.ipynb
+!/materiale/SOA.csv
+!/materiale/Zhou_2019.pdf
+!/materiale/Wen_2024.pdf
+!/materiale/Deilami_2016.pdf
+!/materiale/He_2025.pdf
+!/materiale/GHSL_documentatie.pdf
+!/prezentare/CP0_U13.pdf
+!/prezentare/CP1_U13.pdf
+!/prezentare/datacard_U13.pdf
+!/date/bucuresti.geojson
+!/date/aliniate.csv
+!/date/grila_acoperire.csv
+!/date/acoperire_pixeli.csv
+!/date/acoperire_geometrica.csv
+!/date/inventar.csv
+!/date/verificare_harti.png
