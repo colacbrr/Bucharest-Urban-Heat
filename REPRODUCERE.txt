@@ -12,8 +12,10 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python ruleaza.py explorare
 .venv/bin/python ruleaza.py pca
+.venv/bin/python ruleaza.py robustete
 
-Nu sunt necesare rastere sau conturi de acces pentru aceste două etape.
+Nu sunt necesare rastere sau conturi de acces pentru aceste etape CP2.
+robustete execută mai întâi etapa pca și apoi diagnosticele suplimentare.
 Runnerul verifică SHA-256 al date/aliniate.csv față de metadatele notebookului.
 SHA-256 al tabelului utilizat:
 c446a2af74d3e21bbccd94a62ddd4279f1d2cd53277f49f7c1ba235cbf83edff
@@ -126,7 +128,7 @@ După obținerea fișierelor:
 .venv/bin/python ruleaza.py toate
 
 Verificări individuale: inventar, geometrie, pixeli, grila, aliniere, harti,
-diagnostic, explorare, pca. Lista completă: ruleaza.py --help.
+diagnostic, explorare, pca, robustete. Lista completă: ruleaza.py --help.
 Modificarea rasterelor/codului necesită refacerea alinierii înainte de CP2.
 Metadatele fișierelor brute nu echivalează cu checksum-uri ale rasterelor.
 
@@ -143,3 +145,56 @@ Limitări: epoci diferite, goluri spațial neuniforme, apă inclusă, suport opt
 conservator pe cinci benzi, AGBH diferit de înălțimea netă, transfer aproximativ
 al densităților. Celulele de margine rămân întregi; sumele nu sunt totaluri
 administrative oficiale. Procentele valide nu reprezintă precizia produselor.
+
+7. DIAGNOSTICE CP2: SENSIBILITATE, SURSE ȘI INTERPRETARE
+
+Comandă: .venv/bin/python ruleaza.py robustete
+Datele brute nu sunt necesare. Sunt necesare codul, date/aliniate.csv și
+conturul public date/bucuresti.geojson. Nu este o evaluare pe un test nou:
+este analiză post hoc, fără schimbarea protocolului principal 80% / 500 m.
+
+cp2_sensibilitate.csv: suport 80%/100% și buffer 500/1000 m (4 scenarii).
+Limita estică rămâne 431650 m. Fit separat pe trainul fiecărui scenariu.
+Raportăm RMSE atât pe testul nativ, cât și pe un test comun de 4.348 de
+celule care trec pragul 100%, cu aceleași ID-uri în toate scenariile.
+Coloanele test_comun permit comparația erorilor pe aceleași observații.
+PCA descriptivă alege k=3 în toate cele patru cazuri; varianța cumulată
+train este 93,77–94,04%. RMSE pe testul comun: NDVI 2,80–2,84 °C,
+PCA4 2,92–2,99 °C. NDVI rămâne cea mai bună variantă liniară evaluată.
+Nu alegem retrospectiv bufferul sau pragul după RMSE pe test.
+
+La suport 100%, 20.285 de celule trec fracțiile QA/SCL pe grila comună,
+dar 20.280 trec și toate suporturile fizice: cinci celule au suport NDVI
+99%, după filtrarea suplimentară a reflectanțelor. Aceste două numere
+au definiții diferite și nu sunt interschimbabile.
+
+cp2_comparatie_surse.csv: termic+optic (2 variabile) versus toate sursele
+(5 variabile), la același k=1 sau 2, același train/test și aceleași 500 de
+celule pentru metricile locale. Referința distanțelor este comună:
+cele 5 variabile standardizate pe train. La k=2, trustworthiness10 este
+0,748 pentru termic+optic și 0,969 pentru toate sursele; overlap10 este
+0,252 și 0,543; stressul normalizat al distanțelor este 0,433 și 0,143.
+
+Această referință este o alegere de evaluare, nu ground truth independent.
+Fiecare trăsătură are aceeași pondere; blocul GHSL are trei din cinci
+trăsături. Rezultatul descrie păstrarea geometriei de referință și NU
+demonstrează creșterea performanței predictive. Varianța proprie explicată
+nu este direct comparabilă între 2 și 5 variabile. Eroarea LST/NDVI este
+raportată și în aceleași unități standardizate. La k=2, cele două variabile
+termic+optic sunt reconstruite exact prin definiție, fără a recupera GHSL.
+PCA descriptivă conține LST; nu o folosim pentru a prezice LST.
+
+cp2_interpretare.csv și cp2_interpretare.png: min/max PC1 și PC2 alese
+numai din train; ID-uri, coordonate WGS84, valori fizice și mediane ale
+vecinilor eligibili la <=200 m, fără celula centrală. Hărțile arată scorurile
+axelor ajustate pe train, pe toate celulele eligibile. Culori P2–P98 train,
+cu extremele păstrate în CSV. Golurile sunt celule neeligibile, fără imputare.
+
+PC1_min: NDVI 0,861, construit/AGBH/populație zero, LST 30,56 °C.
+PC1_max: NDVI 0,290, AGBH 14,66 m, construit 4434 m², LST 42,47 °C.
+PC2_min: LST 54,66 °C, NDVI 0,136; coincide cu maximul termic eligibil deja diagnosticat.
+PC2_max: AGBH 13,22 m, populație estimată 533, NDVI 0,485, LST 39,48 °C.
+PC2 combină vegetația și contextul construit/populațional, nu este exclusiv
+o axă a vegetației. Nu atribuim nume de cartiere sau clase de teren fără
+etichete independente. Aceste exemple susțin interpretarea descriptivă;
+nu sunt validare la sol și nu demonstrează anomalii termice reziduale.

@@ -23,6 +23,7 @@ STEPS = {
     'diagnostic': ['pregatire', 'diagnostic'],
     'explorare': ['explorare'],
     'pca': ['pca'],
+    'robustete': ['pca', 'robustete'],
 }
 
 
@@ -61,7 +62,7 @@ def main():
             cells[name] = cell
     names = list(cells) if args.etapa == 'toate' else STEPS[args.etapa]
     # Etapele CP2 pot fi reproduse din tabelul public, fără rasterele originale.
-    if args.etapa in ('explorare', 'pca'):
+    if args.etapa in ('explorare', 'pca', 'robustete'):
         previous = notebook.metadata.get('mede_aliniere', {})
         aligned_path = root / 'date/aliniate.csv'
         if not aligned_path.exists():
