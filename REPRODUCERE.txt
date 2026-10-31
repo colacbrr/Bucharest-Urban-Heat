@@ -1,0 +1,145 @@
+BUCHAREST URBAN HEAT — MEDE U13 / Q13.2
+Cristian-Adrian Colăcel. Coordonator: Conf. dr. ing. Daniela Faur.
+Repo: https://github.com/colacbrr/Bucharest-Urban-Heat
+
+1. REPRODUCERE CP2 DIN TABELUL PUBLIC
+
+Mediu original: Python 3.14, Linux. Comenzi valabile și în fish:
+
+git clone https://github.com/colacbrr/Bucharest-Urban-Heat.git
+cd Bucharest-Urban-Heat
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python ruleaza.py explorare
+.venv/bin/python ruleaza.py pca
+
+Nu sunt necesare rastere sau conturi de acces pentru aceste două etape.
+Runnerul verifică SHA-256 al date/aliniate.csv față de metadatele notebookului.
+SHA-256 al tabelului utilizat:
+c446a2af74d3e21bbccd94a62ddd4279f1d2cd53277f49f7c1ba235cbf83edff
+
+Notebook: analiza.ipynb. Rezultate: date/. Prezentări: prezentare/.
+Matricea CP2: 21.212 celule eligibile × 5 variabile fizice, plus cell_id.
+Tabelul aliniat păstrează toate cele 23.892 de celule și indicatorii de suport.
+Fișele, unitățile, limitările și citările: prezentare/datacard_U13.pdf.
+
+2. PROTOCOL PCA
+
+Unitate: pătrat de 100 × 100 m, EPSG:32635, centru în conturul OSM București.
+Split geometric: test la est de cuantila 80% a centrelor tuturor celulelor,
+E >= 431650 m; train E <= 431150 m; între limite: bandă de 500 m exclusă.
+După eligibilitatea comună >=80%: train 16.050, test 4.576, buffer 586.
+Este un holdout spațial unic, nu validare temporală sau independență garantată.
+
+Standardizare z-score cu mean/SD(ddof=0) numai din train; PCA prin SVD exact.
+Fără imputare sau eliminare de extreme. k ales exclusiv din train: minimum
+varianță cumulată >=90%. Semnul axelor se fixează reproductibil.
+
+PCA descriptivă: LST, NDVI, AGBH, construit estimat, populație estimată.
+Primele 2 PC explică 85,72%; k=3 explică 93,77% în train.
+Coeficienții PC sunt greutățile unitare ale axelor, nu corelații cu axele.
+MSE de reconstrucție este media erorilor pătratice în spațiul standardizat,
+pe toate cele 4.576 de celule test. Trustworthiness și overlap kNN folosesc
+10 vecini pe aceleași 500 de celule test, seed=13; ID-urile sunt în protocol.
+Metricile locale descriu acest eșantion, nu toată grila.
+
+Evaluare downstream distinctă: LST este y și NU intră în cei 4 predictori,
+nici în scalarea/PCA lor. Referințe: media LST train, OLS numai cu NDVI,
+OLS cu toți cei 4 predictori și OLS pe PCA lor (k=2, 90,97% train).
+Pe acest test, RMSE: media 3,72 °C; NDVI 2,82 °C; toți 4 predictorii
+3,03 °C; PCA4(k=2) 2,91 °C. Sursele suplimentare nu îmbunătățesc aici
+regresia liniară. Aceste rezultate nu identifică anomalii persistente.
+
+Fișiere:
+- matrice_cp2.csv, statistici_cp2.csv, corelatii_pearson/spearman.csv;
+- distributii_cp2.png, corelatii_cp2.png;
+- pca_varianta.csv, pca_coeficienti.csv, pca_metrici.csv;
+- pca_scoruri.csv: cell_id, split, scoruri PC ale PCA descriptive;
+- pca_predictie_metrici.csv, pca_predictii_test.csv;
+- pca_protocol.json: limite, eșantion local și amprenta intrării;
+- pca_cp2.png: scree, proiecție și geometria splitului.
+
+Referințe metodologice (implementarea folosește NumPy, nu scikit-learn):
+https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html
+https://scikit-learn.org/stable/common_pitfalls.html
+https://scikit-learn.org/stable/modules/generated/sklearn.manifold.trustworthiness.html
+
+3. PLAN CP3
+
+Săptămâna 7: implementare UMAP și comparație cu PCA pe același split și k.
+Hiperparametrii se investighează numai în train, prin validare spațială internă.
+Săptămâna 8: minimum 5 seed-uri UMAP, metrici locale/globale și RMSE;
+livrabil: tabel comparativ și proiecții. Testul curent rămâne fix.
+Comparația termic+optic vs. toate sursele privește reprezentarea descriptivă.
+Pentru predicția LST comparăm NDVI cu NDVI+formă+populație, fără LST în X.
+UMAP nu este încă implementat. Un test deja examinat nu devine un nou test
+neatins; o evaluare finală ulterioară va necesita un holdout separat.
+
+4. EVOLUȚIA CP0 -> CP1 -> CP2
+
+CP0 este păstrat ca document al etapei exploratorii, fără rescriere retroactivă.
+Errată: codul Q2 din CP0 se citește Q13.2. Întrebarea este neschimbată:
+"Care cartiere sunt mai fierbinți decât le-ar prezice forma lor?"
+Unitatea din catalog: "Celula urbană (grid de 100–500 m). Fenomenul: insula
+de căldură și forma urbană."
+
+CP0: zonă dreptunghiulară exploratorie în jurul Bucureștiului și prag 50%.
+CP1/CP2: contur OSM relation/377733, grilă de 100 m, prag provizoriu 80%.
+Pragul mai strict favorizează celule cu suport mai complet; nu este un prag
+validat ca optim. Raportul de acoperire arată și pragurile 50%/100%.
+Statisticile CP0 și cele actuale au arii/filtre diferite și nu se compară direct.
+"Sezonul de vară" din CP0 desemnează contextul propus, nu o medie sezonieră.
+Analiza efectivă: o singură zi termică/optică, 17.08.2026, ore diferite.
+GHSL AGBH 2018 și BUILT-S/POP 2020 rămân context istoric, fără interpolare
+temporală la 2026. Nu avem încă rezultate privind persistența în timp.
+
+5. REPRODUCEREA ÎNTREGII ALINIERI DIN DATELE ORIGINALE
+
+Rasterele nu sunt în Git. Pentru ruleaza.py toate / aliniere / pixeli /
+geometrie / inventar / diagnostic sunt necesare datele originale de mai jos.
+Descărcările autentificate se fac manual; pipeline-ul așteaptă exact o scenă
+Landsat, un produs Sentinel și câte o dală per produs GHSL.
+
+Landsat — https://earthexplorer.usgs.gov/
+Cont USGS; Data Sets: Landsat Collection 2 Level-2, Landsat 8/9 OLI/TIRS.
+Caută scena LC08_L2SP_182029_20260817_20260823_02_T1, Path 182 / Row 029.
+Pune fișierele originale *_ST_B10.TIF, *_QA_PIXEL.TIF, *_ST_QA.TIF și
+*_MTL.txt în date/landsat/. Păstrează exact numele produsului.
+
+Sentinel — https://browser.dataspace.copernicus.eu/
+Cont CDSE; Sentinel-2 MSI L2A, 17.08.2026, dala T35TMK, produs:
+S2C_MSIL2A_20260817T090551_N0512_R050_T35TMK_20260817T124254.SAFE
+Descarcă produsul și extrage .SAFE în date/sentinel2/, cu structura originală.
+Sunt necesare B02/B03/B04/B08 la 10 m, B11/SCL la 20 m și MTD_MSIL2A.xml.
+
+GHSL — https://human-settlement.emergency.copernicus.eu/downloadWizard.php
+Rezoluție 100 m, World Mollweide (54009), dala R4_C21, R2023A, V1_0.
+Selectează BUILT-H AGBH 2018, BUILT-S 2020 și POP 2020. Extrage în date/ghsl/:
+GHS_BUILT_H_AGBH_E2018_GLOBE_R2023A_54009_100_V1_0_R4_C21.tif
+GHS_BUILT_S_E2020_GLOBE_R2023A_54009_100_V1_0_R4_C21.tif
+GHS_POP_E2020_GLOBE_R2023A_54009_100_V1_0_R4_C21.tif
+
+Conturul folosit este deja public în date/bucuresti.geojson. Nu îl înlocui
+cu un export OSM nou dacă urmărești reproducerea exactă a rezultatelor.
+
+După obținerea fișierelor:
+.venv/bin/python ruleaza.py toate
+
+Verificări individuale: inventar, geometrie, pixeli, grila, aliniere, harti,
+diagnostic, explorare, pca. Lista completă: ruleaza.py --help.
+Modificarea rasterelor/codului necesită refacerea alinierii înainte de CP2.
+Metadatele fișierelor brute nu echivalează cu checksum-uri ale rasterelor.
+
+6. ATRIBUIRE ȘI LIMITE
+
+Landsat: USGS/NASA, Collection 2 Level-2, domeniu public.
+Contains modified Copernicus Sentinel data 2026. Acces: CDSE.
+GHSL © European Union/JRC, CC BY 4.0. Contur © OpenStreetMap contributors,
+ODbL. Citări complete și DOI-uri: prezentare/datacard_U13.pdf.
+Produsele originale, versiunile și bibliografia sunt documentate acolo.
+Nu atribuim codului sau întregului repo licența uneia dintre sursele de date.
+
+Limitări: epoci diferite, goluri spațial neuniforme, apă inclusă, suport optic
+conservator pe cinci benzi, AGBH diferit de înălțimea netă, transfer aproximativ
+al densităților. Celulele de margine rămân întregi; sumele nu sunt totaluri
+administrative oficiale. Procentele valide nu reprezintă precizia produselor.

@@ -21,6 +21,8 @@ STEPS = {
     'aliniere': ['pregatire', 'functii', 'grila', 'aliniere'],
     'harti': ['pregatire', 'harti'],
     'diagnostic': ['pregatire', 'diagnostic'],
+    'explorare': ['explorare'],
+    'pca': ['pca'],
 }
 
 
@@ -58,6 +60,21 @@ def main():
                 raise ValueError('Fiecare celulă de cod trebuie să aibă o etapă unică.')
             cells[name] = cell
     names = list(cells) if args.etapa == 'toate' else STEPS[args.etapa]
+    # Etapele CP2 pot fi reproduse din tabelul public, fără rasterele originale.
+    if args.etapa in ('explorare', 'pca'):
+        previous = notebook.metadata.get('mede_aliniere', {})
+        aligned_path = root / 'date/aliniate.csv'
+        if not aligned_path.exists():
+            raise ValueError('Lipsește date/aliniate.csv. Obține tabelul public sau rulează aliniere.')
+        current_code = hashlib.sha256('\n'.join(
+            cells[key].source for key in ['pregatire', 'functii', 'grila', 'aliniere']
+        ).encode()).hexdigest()
+        if previous.get('cod_sha256') and current_code != previous['cod_sha256']:
+            raise ValueError('Codul alinierii s-a schimbat. Rulează întâi: ruleaza.py aliniere')
+        expected_hash = previous.get('tabel_sha256')
+        if expected_hash and hashlib.sha256(aligned_path.read_bytes()).hexdigest() != expected_hash:
+            raise ValueError('Tabelul aliniat a fost modificat după generare. '
+                             'Rulează întâi: ruleaza.py aliniere')
     scope = {'__name__': '__main__'}
     provenance = None
     start = time.perf_counter()
@@ -98,11 +115,21 @@ def main():
                 if any(previous.get(key) != value for key, value in provenance.items()):
                     failure = ValueError('Sursele sau codul de aliniere s-au schimbat. '
                                          'Rulează întâi: ruleaza.py aliniere')
+                aligned_path = root / 'date/aliniate.csv'
+                expected_hash = previous.get('tabel_sha256')
+                if failure is None and expected_hash and (
+                    not aligned_path.exists() or
+                    hashlib.sha256(aligned_path.read_bytes()).hexdigest() != expected_hash
+                ):
+                    failure = ValueError('Tabelul aliniat a fost modificat după generare. '
+                                         'Rulează întâi: ruleaza.py aliniere')
         if failure is None and name == 'aliniere':
             notebook.metadata['mede_aliniere'] = {
                 **provenance,
                 'executat_utc': datetime.now(timezone.utc).isoformat(),
                 'celule': len(scope['aligned']),
+                'tabel_sha256': hashlib.sha256(
+                    (root / 'date/aliniate.csv').read_bytes()).hexdigest(),
             }
         if failure is not None:
             cell.outputs.append(nbformat.v4.new_output(

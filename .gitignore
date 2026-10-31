@@ -6,6 +6,7 @@
 !/prezentare/
 !/date/
 !/requirements.txt
+!/REPRODUCERE.txt
 !/ruleaza.py
 !/analiza.ipynb
 !/materiale/SOA.csv
@@ -16,6 +17,7 @@
 !/materiale/GHSL_documentatie.pdf
 !/prezentare/CP0_U13.pdf
 !/prezentare/CP1_U13.pdf
+!/prezentare/CP2_U13.pdf
 !/prezentare/datacard_U13.pdf
 !/date/bucuresti.geojson
 !/date/aliniate.csv
@@ -24,3 +26,17 @@
 !/date/acoperire_geometrica.csv
 !/date/inventar.csv
 !/date/verificare_harti.png
+!/date/matrice_cp2.csv
+!/date/statistici_cp2.csv
+!/date/corelatii_pearson.csv
+!/date/corelatii_spearman.csv
+!/date/distributii_cp2.png
+!/date/corelatii_cp2.png
+!/date/pca_varianta.csv
+!/date/pca_coeficienti.csv
+!/date/pca_metrici.csv
+!/date/pca_scoruri.csv
+!/date/pca_predictie_metrici.csv
+!/date/pca_predictii_test.csv
+!/date/pca_protocol.json
+!/date/pca_cp2.png
